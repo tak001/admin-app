@@ -1,10 +1,10 @@
-import { HttpClient } from '@angular/common/http';
+/* eslint-disable @typescript-eslint/naming-convention */
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Member } from './member';
 import { MessageService } from './message.service';
-import { MEMBERS } from './mock-members';
 
 @Injectable({
   // serviceがappの中のどこで使われるかの指定
@@ -12,6 +12,10 @@ import { MEMBERS } from './mock-members';
 })
 export class MemberService {
   private membersUrl = 'api/members';
+  // eslint-disable-next-line @typescript-eslint/member-ordering
+  httpOptions = {
+    headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
+  };
 
   constructor(
     private messageService: MessageService,
@@ -20,16 +24,24 @@ export class MemberService {
 
   getMembers(): Observable<Member[]> {
     return this.http.get<Member[]>(this.membersUrl).pipe(
-      tap((members) => this.log('社員データを取得しました')),
+      tap(() => this.log('社員データを取得しました')),
       catchError(this.handleError<Member[]>('getMembers', [])),
     );
   }
 
   getMember(id: number): Observable<Member | undefined> {
-    this.messageService.add(
-      `MemberService: 社員データ(id=${id})を取得しました`,
+    const url = `${this.membersUrl}/${id}`;
+    return this.http.get<Member>(url).pipe(
+      tap(() => this.log(`社員データ(id=${id})を取得しました`)),
+      catchError(this.handleError<Member>(`getMember id=${id}`)),
     );
-    return of(MEMBERS.find((member) => member.id === id));
+  }
+
+  updateMember(member: Member): Observable<any> {
+    return this.http.put(this.membersUrl, member, this.httpOptions).pipe(
+      tap(() => this.log(`社員データ(id=${member.id})を変更しました`)),
+      catchError(this.handleError<any>('updateMember')),
+    );
   }
 
   private log(message: string) {
